@@ -447,7 +447,8 @@ bool GScene::drawScene(bool useBSP, Vector3f &camPoint)
   if(useBSP) 
   {
     glDisable(GL_CULL_FACE);
-    _BSPTree->drawOnBSPTree(camPoint);
+    if(_BSPTree != nullptr) 
+      _BSPTree->drawOnBSPTree(camPoint);
   }
   else
   {

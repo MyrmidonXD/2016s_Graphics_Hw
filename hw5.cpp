@@ -30,8 +30,8 @@ GLdouble rotMatrix[16] =
 
 float initCamDist = 500.0f;
 
-float eye[3] = { 0.0f, 0.0f, initCamDist };
-float ori[3] = { 0.0f, 0.0f, 0.0f };
+float eye[3] = { 0.0f, 150.0f, initCamDist };
+float ori[3] = { 0.0f, 150.0f, 0.0f };
 float upv[3] = { 0.0f, 1.0f, 0.0f };
 float rot[3] = { 0.0f, 0.0f, 0.0f };
 
@@ -69,13 +69,13 @@ int drawing_mode = 1; // 0, 1, 2
 string sp_type = "";
 
 // Model Vertices Data
-vector<vector<vector<Vector3f>>> model;
+// vector<vector<vector<Vector3f>>> model;
 
 ////////////////////
 
 //////////////////// Needed field for HW4
 // Lights
-GLfloat light0Pos[] = { 300.0, 0.0, 0.0, 1.0 };
+GLfloat light0Pos[] = { 0.0, 300.0, 0.0, 1.0 };
 GLfloat light1Pos[] = { 0.0, 400.0, 0.0, 1.0 };
 GLfloat light2Pos[] = { 0.0, 0.0, -200.0, 1.0 };
 GLfloat light3Pos[] = { 0.0, 100.0, 200.0, 1.0};
@@ -87,13 +87,13 @@ GScene *scene;
 bool useBSP = true;
 
 //-- Material
-// 1) For translucent swept surface.
-GLfloat tr1_ambient[] = { 0.142, 0.164, 0.204, 1.0 };
-GLfloat tr1_diffuse[] = { 0.566, 0.656, 0.816, 0.3 };
-GLfloat tr1_specular[] = { 0.75, 0.289, 0.285, 1.0 };
+// 1) For BackGround.
+GLfloat tr1_ambient[] = { 0.1, 0.1, 0.1, 1.0 };
+GLfloat tr1_diffuse[] = { 0.3, 0.3, 0.3, 1.0 };
+GLfloat tr1_specular[] = { 0.6, 0.6, 0.6, 1.0 };
 GLfloat tr1_shininess = 112.0;
 
-// 2) For translucent cubes
+// 2) For objects
 
 GLfloat tr2_ambient[] = { 0.35, 0.2, 0.2, 1.0 };
 GLfloat tr2_diffuse[] = { 0.965, 0.789, 0.785, 0.6 };
@@ -207,6 +207,57 @@ GModel* makeCube(GLfloat minX, GLfloat minY, GLfloat minZ, GLfloat maxX, GLfloat
   return cube;
 }
 
+GModel* makeBackground(GLfloat size)
+{
+  vector<Vector3f> vlist;
+  static vector<Vector3i> idxlist;
+
+  GModel *background_cube = new GModel();
+
+  vlist.emplace_back(-size, 2.0*size, -size);
+  vlist.emplace_back(-size, 2.0*size, 3.0*size);
+  vlist.emplace_back(size, 2.0*size, 3.0*size);
+  vlist.emplace_back(size, 2.0*size, -size);
+  vlist.emplace_back(-size, 0.0, -size);
+  vlist.emplace_back(-size, 0.0, 3.0*size);
+  vlist.emplace_back(size, 0.0, 3.0*size);
+  vlist.emplace_back(size, 0.0, -size);
+
+
+  if(idxlist.empty())
+  {
+    idxlist.emplace_back(0, 3, 2);
+    idxlist.emplace_back(0, 2, 1);
+    idxlist.emplace_back(1, 5, 4);
+    idxlist.emplace_back(1, 4, 0);
+    idxlist.emplace_back(0, 4, 7);
+    idxlist.emplace_back(0, 7, 3);
+    idxlist.emplace_back(3, 7, 6);
+    idxlist.emplace_back(3, 6, 2);
+    idxlist.emplace_back(2, 6, 5);
+    idxlist.emplace_back(2, 5, 1);
+    idxlist.emplace_back(4, 5, 6);
+    idxlist.emplace_back(4, 6, 7);
+  }
+  
+  assert(idxlist.size() == 12);
+
+  for(int i = 0; i < 12; i++)
+  {
+    Vector3i idx = idxlist[i];
+    GSurface *curr = new GSurface(vlist[idx[0]], vlist[idx[1]], vlist[idx[2]]);
+    
+    for(int j = 0; j < 3; j++)
+    {
+      curr->pushNormal(curr->getSurfaceNormal());
+    }
+
+    background_cube->addSurface(curr);
+  }
+
+  return background_cube;
+}
+
 void lightSetup()
 {
   // Light Data
@@ -214,6 +265,7 @@ void lightSetup()
   GLfloat diffuseLight0[] = { 1.0, 1.0, 1.0, 1.0 };
   GLfloat specularLight0[] = { 1.0, 1.0, 1.0, 1.0 };
 
+  /*
   GLfloat ambientLight1[] = { 0.3, 0.3, 0.3, 1.0 };
   GLfloat diffuseLight1[] = { 1.0, 1.0, 1.0, 1.0 };
   GLfloat specularLight1[] = { 1.0, 1.0, 1.0, 1.0 };
@@ -225,7 +277,8 @@ void lightSetup()
   GLfloat ambientLight3[] = { 0.0, 0.0, 0.2, 1.0 };
   GLfloat diffuseLight3[] = { 0.6, 0.6, 0.6, 1.0 };
   GLfloat specularLight3[] = { 0.4, 0.4, 0.4, 1.0 };
-  
+  */
+
   glEnable(GL_LIGHTING);
   glLightfv(GL_LIGHT0, GL_AMBIENT, ambientLight0);
   glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuseLight0);
@@ -233,6 +286,7 @@ void lightSetup()
   glLightfv(GL_LIGHT0, GL_POSITION, light0Pos);
   glEnable(GL_LIGHT0);
   
+  /*
   glLightfv(GL_LIGHT1, GL_AMBIENT, ambientLight1);
   glLightfv(GL_LIGHT1, GL_DIFFUSE, diffuseLight1);
   glLightfv(GL_LIGHT1, GL_SPECULAR, specularLight1);
@@ -250,6 +304,7 @@ void lightSetup()
   glLightfv(GL_LIGHT3, GL_SPECULAR, specularLight3);
   glLightfv(GL_LIGHT3, GL_POSITION, light3Pos);
   glEnable(GL_LIGHT3);
+  */
 }
 
 void camMouseSeek(int x, int y)
@@ -478,8 +533,10 @@ void glutKeyboardInput(unsigned char key, int x, int y)
             break;
 
         case 'p':
-        case 'P':
+        case 'P': // Print Camera Setting
             cout << "eye: " << eye[0] << ", " << eye[1] << ", " << eye[2] << endl;
+            cout << "fov: " << fovy << endl;
+            cout << "zNear: " << zNear << ", zFar: " << zFar <<endl;
         default:
             break;
     }
@@ -719,9 +776,9 @@ void display()
 
     glPushMatrix();
     glLightfv(GL_LIGHT0, GL_POSITION, light0Pos);
-    glLightfv(GL_LIGHT1, GL_POSITION, light1Pos);
-    glLightfv(GL_LIGHT2, GL_POSITION, light2Pos);
-    glLightfv(GL_LIGHT3, GL_POSITION, light3Pos);
+    //glLightfv(GL_LIGHT1, GL_POSITION, light1Pos);
+    //glLightfv(GL_LIGHT2, GL_POSITION, light2Pos);
+    //glLightfv(GL_LIGHT3, GL_POSITION, light3Pos);
     glPopMatrix();
 
     glutSwapBuffers();
@@ -749,130 +806,35 @@ void Timer(int unused)
 
 int main(int argc, char *argv[])
 {
-  /*
-  if(argc < 2) 
-  {
-    cout << "usage: ./_hw4 <filename>" << endl;
-    return 0;
-  }
-  */
-  
-
-  for(int idx = 1; idx < argc; idx++)
-  {
-    model.emplace_back();
-    cp_splines.clear();
-    Parser *p = new Parser(argv[idx]);
-    vector<vector<Vector3f>> c_points = p->getCPoints();
-    vector<float> scales = p->getScales();
-    vector<Quaternionf> rotations = p->getRotations();
-    vector<Vector3f> positions = p->getPositions();
-    
-    sec_num = p->getSectionNum();
-    cp_num = p->getCPointNum();
-    sp_type = p->getSplineType(); 
-
-    // length-direction spline generation 
-    scale_spline = new FloatSpline(scales);
-    pos_spline = new Spline(positions);
-    rot_spline = new QuaternionSpline(rotations);
-    for(int i=0; i<cp_num; i++)
-    {
-      Spline _cp_sp(c_points[i]);
-      cp_splines.push_back(_cp_sp);
-    }
-
-    // surface generation while proceeding in length
-    float t = 1.0, delta_t = 1.0/(float)leng_level;
-    while(t < (float)(sec_num - 2) + delta_t/2.0)
-    {
-      vector<Vector3f> surf_cp;
-
-      float curr_scale = scale_spline->getSpline(t);
-      Vector3f curr_pos = pos_spline->getSpline(t);
-      Quaternionf curr_rot = rot_spline->getSpline(t);
-
-      for(int i = 0; i < cp_num; i++)
-      {
-        Vector3f point = cp_splines[i].getSpline(t);
-
-        // Scale -> Rotation -> Translate
-
-        point = curr_scale * point;
-             
-        Quaternionf im_quat(0.0, point[0], point[1], point[2]);
-        im_quat = curr_rot * im_quat * curr_rot.conjugate();
-        Vector3f roted_point(im_quat.x(), im_quat.y(), im_quat.z());
-        point = roted_point;
-
-        point = point + curr_pos;
-
-        surf_cp.push_back(point);
-      }
-
-      // surface vertices genetation
-      Spline surface_spline(surf_cp);
-      vector<Vector3f> surf_vertices;
-      float k = 0.0, delta_k = 1.0/(float)surf_level;
-      while(k < (float)cp_num + delta_k/2.0)
-      {
-        Vector3f point = surface_spline.getSpline(k, sp_type, true);
-        surf_vertices.push_back(point);
-
-        k += delta_k;
-      }
-
-      model[idx-1].push_back(surf_vertices);
-      t += delta_t;  
-    }
-  }
-
   // Calculate normal vector for model
   // calcModelNormal();
   
   // Scene generation
   
   vector<GModel*> mlist;
-  mlist.push_back(new GModel(model[0]));
+  mlist.push_back(makeBackground(200.0));
   
   mlist[0]->setMaterial(GL_AMBIENT, tr1_ambient);
   mlist[0]->setMaterial(GL_DIFFUSE, tr1_diffuse);
   mlist[0]->setMaterial(GL_SPECULAR, tr1_specular);
   mlist[0]->setShininess(tr1_shininess);
-  mlist[0]->setOpaqueness(false);
+  mlist[0]->setOpaqueness(true);
 
   mlist.push_back(makeCube(2.0, 48.0, 2.0, 82.0, 128.0, 82.0));
 
-  mlist[1]->setMaterial(GL_AMBIENT, tr2_ambient);
-  mlist[1]->setMaterial(GL_DIFFUSE, tr2_diffuse);
-  mlist[1]->setMaterial(GL_SPECULAR, tr2_specular);
-  mlist[1]->setShininess(tr2_shininess);
-  mlist[1]->setOpaqueness(false);
+  mlist[1]->setMaterial(GL_AMBIENT, mat2_ambient);
+  mlist[1]->setMaterial(GL_DIFFUSE, mat2_diffuse);
+  mlist[1]->setMaterial(GL_SPECULAR, mat2_specular);
+  mlist[1]->setShininess(mat2_shininess);
+  mlist[1]->setOpaqueness(true);
 
   mlist.push_back(makeCube(55.0, 25.0, 55.0, 125.0, 95.0, 125.0));
-
-  mlist[2]->setMaterial(GL_AMBIENT, tr3_ambient);
-  mlist[2]->setMaterial(GL_DIFFUSE, tr3_diffuse);
-  mlist[2]->setMaterial(GL_SPECULAR, tr3_specular);
-  mlist[2]->setShininess(tr3_shininess);
-  mlist[2]->setOpaqueness(false);
-
   
-  mlist.push_back(new GModel(model[1]));
-
-  mlist[3]->setMaterial(GL_AMBIENT, mat1_ambient);
-  mlist[3]->setMaterial(GL_DIFFUSE, mat1_diffuse);
-  mlist[3]->setMaterial(GL_SPECULAR, mat1_specular);
-  mlist[3]->setShininess(mat1_shininess);
-  
-  mlist.push_back(makeCube(-300.0, -30.0, -50.0, -200.0, 70.0, 50.0));
-
-  mlist[4]->setMaterial(GL_AMBIENT, tr4_ambient);
-  mlist[4]->setMaterial(GL_DIFFUSE, tr4_diffuse);
-  mlist[4]->setMaterial(GL_SPECULAR, tr4_specular);
-  mlist[4]->setShininess(tr4_shininess);
-  mlist[4]->setOpaqueness(false);
-
+  mlist[2]->setMaterial(GL_AMBIENT, mat3_ambient);
+  mlist[2]->setMaterial(GL_DIFFUSE, mat3_diffuse);
+  mlist[2]->setMaterial(GL_SPECULAR, mat3_specular);
+  mlist[2]->setShininess(mat3_shininess);
+  mlist[2]->setOpaqueness(true);
 
   scene = new GScene(mlist);
 
@@ -881,14 +843,13 @@ int main(int argc, char *argv[])
   glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH);
   glutInitWindowSize(width, height);
   glutInitWindowPosition(80, 60);
-  glutCreateWindow("[Graphics HW4] 2014-11111");
+  glutCreateWindow("[Graphics HW5] 2014-11111");
 
   // Setup the lighting
   lightSetup();
 
   // Setup the shading Model
   glShadeModel(GL_SMOOTH);
-  //glEnable(GL_NORMALIZE);
 
   glutReshapeFunc(resize);
   glutDisplayFunc(display);
