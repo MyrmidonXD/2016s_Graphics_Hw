@@ -207,6 +207,17 @@ GModel* makeCube(GLfloat minX, GLfloat minY, GLfloat minZ, GLfloat maxX, GLfloat
   return cube;
 }
 
+GModel* makeSphere(GLfloat radius, GLfloat x, GLfloat y, GLfloat z)
+{
+  Vector3f center(x, y, z);
+
+  GModel *sphere = new GModel();
+
+  sphere->setSphere(radius, center);
+
+  return sphere;
+}
+
 GModel* makeBackground(GLfloat size)
 {
   vector<Vector3f> vlist;
@@ -836,6 +847,14 @@ int main(int argc, char *argv[])
   mlist[2]->setShininess(mat3_shininess);
   mlist[2]->setOpaqueness(true);
 
+  mlist.push_back(makeSphere(70.0, -60.0, 70.0, 120.0));
+
+  mlist[3]->setMaterial(GL_AMBIENT, mat4_ambient);
+  mlist[3]->setMaterial(GL_DIFFUSE, mat4_diffuse);
+  mlist[3]->setMaterial(GL_SPECULAR, mat4_specular);
+  mlist[3]->setShininess(mat4_shininess);
+  mlist[3]->setOpaqueness(true);
+  
   scene = new GScene(mlist);
 
    // OpenGL Stuffs

@@ -353,11 +353,29 @@ void GModel::setOpaqueness(bool isOpaque)
   _flag_opaque = isOpaque;
 }
 
+void GModel::setSphere(float radius, Vector3f &center)
+{
+  _radius = radius;
+  _center = center;
+  _flag_sphere = true;
+}
+
 void GModel::drawModel(void)
 {
-  for(vector<GSurface*>::const_iterator it = _surfaces.begin(); it != _surfaces.end(); it++)
+  if(isSphere())
   {
-    (*it)->drawSurface();
+    glPushMatrix();
+    applyMaterial();
+    glTranslatef(_center[0], _center[1], _center[2]);
+    glutSolidSphere(_radius, 16, 16);
+    glPopMatrix();
+  }
+  else
+  {
+    for(vector<GSurface*>::const_iterator it = _surfaces.begin(); it != _surfaces.end(); it++)
+    {
+      (*it)->drawSurface();
+    }
   }
 }
 

@@ -87,9 +87,13 @@ class GModel
     void setMaterial(GLenum pname, const GLfloat* params); // Set Material values.
     void setShininess(GLfloat value); // Set Material Shininess (= glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, value);)
     void setOpaqueness(bool isOpaque); // Set opaque flag to the value of isOpaque.
+    void setSphere(float radius, Vector3f &center); // Set sphere flag to true, and set properties of sphere.
 
     // Getters
     bool isOpaque(void) { return _flag_opaque; } // Get flag for opaqueness (true if opaque)
+    bool isSphere(void) { return _flag_sphere; } // Get flag for sphere
+    const Vector3f& getCenter(void) { return _center; }
+    float getRadius(void) { return _radius; }
     vector<GSurface*>& getSurfaces(void) { return _surfaces; }
 
     // Draw this model
@@ -109,6 +113,9 @@ class GModel
 
     // Model properties
     bool _flag_opaque = true;
+    bool _flag_sphere = false;
+    Vector3f _center;
+    float _radius = 0.0;
 
     // Surface list
     vector<GSurface*> _surfaces;
