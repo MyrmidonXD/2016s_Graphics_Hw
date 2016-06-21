@@ -25,8 +25,10 @@ class GSurface;
 class GModel;
 class GScene;
 class BSPNode;
+class GRay;
+class GLight;
 
-typedef Color Vector3f;
+typedef Vector3f Color;
 
 // Class representing a surface of the model
 class GSurface 
@@ -207,6 +209,7 @@ class GRay
 
     // Ray Tracing
     // If ray hit the target, then set was_hit to true.
+    // If max_depth less than zero, then it means shadow ray.
     Color TraceRay(GModel* target, int max_depth, bool *was_hit);
   
     Vector3f& getOrigin(void) { return _origin; }

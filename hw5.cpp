@@ -16,6 +16,7 @@
 #include <parser.h>
 #include <spline.h>
 #include <models.h>
+#include <EasyBMP.h>
 
 using namespace std;
 using namespace Eigen;
@@ -857,29 +858,36 @@ int main(int argc, char *argv[])
   
   scene = new GScene(mlist);
 
-   // OpenGL Stuffs
-  glutInit(&argc, argv);
-  glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH);
-  glutInitWindowSize(width, height);
-  glutInitWindowPosition(80, 60);
-  glutCreateWindow("[Graphics HW5] 2014-11111");
+  // Option parsing
+  string see_in_GL("--GL");
+  if(argc >= 2 && see_in_GL.compare(argv[1]) == 0)
+  {
+    // OpenGL Stuffs
+    glutInit(&argc, argv);
+    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH);
+    glutInitWindowSize(width, height);
+    glutInitWindowPosition(80, 60);
+    glutCreateWindow("[Graphics HW5] 2014-11111");
 
-  // Setup the lighting
-  lightSetup();
+    // Setup the lighting
+    lightSetup();
 
-  // Setup the shading Model
-  glShadeModel(GL_SMOOTH);
+    // Setup the shading Model
+    glShadeModel(GL_SMOOTH);
 
-  glutReshapeFunc(resize);
-  glutDisplayFunc(display);
-  glutMouseFunc(glutMouse);
-  glutMotionFunc(glutMotion);
-  glutKeyboardFunc(glutKeyboardInput);
-  glutTimerFunc(timeStep, Timer, 0);
+    glutReshapeFunc(resize);
+    glutDisplayFunc(display);
+    glutMouseFunc(glutMouse);
+    glutMotionFunc(glutMotion);
+    glutKeyboardFunc(glutKeyboardInput);
+    glutTimerFunc(timeStep, Timer, 0);
 
-  glEnable(GL_DEPTH_TEST);
+    glEnable(GL_DEPTH_TEST);
 
-  glutMainLoop();
+    glutMainLoop();
 
-  return 0;
+    return 0;
+  }
+
+  // Shooting Rays
 }

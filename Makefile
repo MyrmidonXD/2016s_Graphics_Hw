@@ -1,5 +1,5 @@
 CC=g++
-CFLAGS=-std=c++11 -g -lm -lGL -lGLU -lglut -I ./Eigen -I .
+CFLAGS=-std=c++11 -g -lm -lGL -lGLU -lglut -I ./Eigen -I . -I ./bitmap
 
 OBJ=parser.o spline.o models.o hw5.o
 DEPS=parser.h spline.h models.h

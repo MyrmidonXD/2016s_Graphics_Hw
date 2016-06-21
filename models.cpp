@@ -354,7 +354,7 @@ GModel::GModel(vector<GSurface*> &slist)
   _surfaces = slist; // copy assignment
 }
 
-void setScene(GScene *scene)
+void GModel::setScene(GScene *scene)
 {
   _parent_scene = scene;
 }
@@ -407,6 +407,17 @@ Color GModel::getDiffuse(float I_l)
 {
   Color d(_diffuse[0], _diffuse[1], _diffuse[2]);
   return I_l * d;
+}
+
+Color GModel::getSpecular(float I_l)
+{
+  Color s(_specular[0], _specular[1], _specular[2]);
+  return I_l * s;
+}
+
+float GModel::getShininess(void)
+{
+  return _shininess;
 }
 
 void GModel::drawModel(void)
@@ -622,11 +633,17 @@ GRay::GRay(Vector3f &origin, Vector3f &direction)
     _direction.normalize();
 }
 
-Color GRay::TraceRay(GModel* target, int max_depth, bool *was_hit);
+Color GRay::TraceRay(GModel* target, int max_depth, bool *was_hit)
 {
   bool is_sphere = target->isSphere();
 
-  // Find intersection point and get the color of that point.
+  if(max_depth == 0)
+  {
+    *was_hit = false;
+    return Color::Zero();
+  }
+
+  // Find intersection point
   Vector3f ic_point;
   Vector3f ic_normal;
   Color local_color;
@@ -644,9 +661,12 @@ Color GRay::TraceRay(GModel* target, int max_depth, bool *was_hit);
       *was_hit = false;
       return Color::Zero();
     }
-    
-    float s = u_dot_delta_p - sqrt(discriminant);
-    ic_point = _origin + (s * _direction);
+    else
+    {
+      *was_hit = true;
+      float s = u_dot_delta_p - sqrt(discriminant);
+      ic_point = _origin + (s * _direction);
+    }
   }
   else
   {
@@ -668,17 +688,21 @@ Color GRay::TraceRay(GModel* target, int max_depth, bool *was_hit);
       return Color::Zero();
   }
 
+  if(max_depth < 0) 
+    return Color::Zero(); // returning the result of hit/not hit, for shadow rays.
+
   // Shadow Ray Casting
   vector<GLight*> activeLight;
   vector<GModel*> mlist = target->getScene()->getModels();
 
   for(vector<GLight*>::iterator it = GLight::LightList.begin(); it != GLight::LightList.end(); it++)
   {
-    GRay shadow_ray(ic_point, (*it)->GetPosition - ic_point);
+    Vector3f dir = (*it)->GetPosition() - ic_point;
+    GRay shadow_ray(ic_point, dir);
     bool result = false;
     for(vector<GModel*>::iterator mit = mlist.begin(); mit != mlist.end(); mit++)
     {
-      TraceRay((*mit), 1, &result);
+      shadow_ray.TraceRay((*mit), -1, &result); // shadow ray casting
       if(result == true)
       {
         if((*mit)->isOpaque()) 
@@ -723,3 +747,26 @@ Color GRay::TraceRay(GModel* target, int max_depth, bool *was_hit);
   return local_color;
 }
 
+/////////////////////////////////////////
+//                                     //
+// class GLight implementation         //
+//                                     //
+/////////////////////////////////////////
+
+GLight::GLight(Vector3f &pos, float intensity)
+{
+  _position = pos;
+  _intensity = intensity;
+}
+
+vector<GLight*> GLight::LightList;
+
+Vector3f& GLight::GetPosition(void)
+{
+  return _position;
+}
+
+float GLight::GetIntensity(void)
+{
+  return _intensity;
+}
