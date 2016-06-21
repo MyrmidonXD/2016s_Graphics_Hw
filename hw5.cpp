@@ -94,7 +94,7 @@ bool useBSP = true;
 GLfloat tr1_ambient[] = { 0.1, 0.1, 0.1, 1.0 };
 GLfloat tr1_diffuse[] = { 0.3, 0.3, 0.3, 1.0 };
 GLfloat tr1_specular[] = { 0.6, 0.6, 0.6, 1.0 };
-GLfloat tr1_shininess = 112.0;
+GLfloat tr1_shininess = 64.0;
 
 // 2) For objects
 
@@ -115,24 +115,24 @@ GLfloat tr4_shininess = 108.0;
 
 // 3) Silver
 
-GLfloat mat2_ambient[] = { 0.2, 0.2, 0.2, 1.0 };
-GLfloat mat2_diffuse[] = { 0.3, 0.3, 0.3, 1.0 };
-GLfloat mat2_specular[] = { 0.8, 0.8, 0.8, 1.0 };
+GLfloat mat2_ambient[] = { 0.1, 0.1, 0.1, 1.0 };
+GLfloat mat2_diffuse[] = { 0.2, 0.2, 0.2, 1.0 };
+GLfloat mat2_specular[] = { 0.7, 0.7, 0.7, 1.0 };
 GLfloat mat2_shininess = 16.0;
 
 // 4) Gold
 
-GLfloat mat3_ambient[] = { 0.4, 0.3, 0.1, 1.0 };
-GLfloat mat3_diffuse[] = { 0.8, 0.6, 0.2, 1.0 };
-GLfloat mat3_specular[] = { 0.83, 0.7, 0.0, 1.0 };
+GLfloat mat3_ambient[] = { 0.2, 0.2, 0.1, 1.0 };
+GLfloat mat3_diffuse[] = { 0.4, 0.4, 0.2, 1.0 };
+GLfloat mat3_specular[] = { 0.4, 0.4, 0.0, 1.0 };
 GLfloat mat3_shininess = 16.0;
 
 // 5) Rubber(red)
 
-GLfloat mat4_ambient[] = { 0.18, 0.0, 0.0, 1.0 };
-GLfloat mat4_diffuse[] = { 0.92, 0.0, 0.0, 1.0 };
-GLfloat mat4_specular[] = { 0.3, 0.0, 0.0, 1.0 };
-GLfloat mat4_shininess = 120.0;
+GLfloat mat4_ambient[] = { 0.2, 0.0, 0.0, 1.0 };
+GLfloat mat4_diffuse[] = { 0.7, 0.0, 0.0, 1.0 };
+GLfloat mat4_specular[] = { 0.8, 0.8, 0.8, 1.0 };
+GLfloat mat4_shininess = 64.0;
 
 // 6) Skin
 
@@ -783,7 +783,7 @@ int main(int argc, char *argv[])
   mlist[0]->setShininess(tr1_shininess);
   mlist[0]->setOpaqueness(true);
 
-  mlist.push_back(makeCube(2.0, 48.0, 2.0, 82.0, 128.0, 82.0));
+  mlist.push_back(makeCube(40.0, 0.0, 2.0, 120.0, 80.0, 82.0));
 
   mlist[1]->setMaterial(GL_AMBIENT, mat2_ambient);
   mlist[1]->setMaterial(GL_DIFFUSE, mat2_diffuse);
@@ -791,15 +791,15 @@ int main(int argc, char *argv[])
   mlist[1]->setShininess(mat2_shininess);
   mlist[1]->setOpaqueness(true);
 
-  mlist.push_back(makeCube(55.0, 25.0, 55.0, 125.0, 95.0, 125.0));
+  mlist.push_back(makeCube(55.0, 125.0, -35.0, 125.0, 195.0, 45.0));
   
   mlist[2]->setMaterial(GL_AMBIENT, mat3_ambient);
   mlist[2]->setMaterial(GL_DIFFUSE, mat3_diffuse);
   mlist[2]->setMaterial(GL_SPECULAR, mat3_specular);
   mlist[2]->setShininess(mat3_shininess);
   mlist[2]->setOpaqueness(true);
-
-  mlist.push_back(makeSphere(70.0, -60.0, 70.0, 120.0));
+  
+  mlist.push_back(makeSphere(70.0, -60.0, 70.0, -120.0));
 
   mlist[3]->setMaterial(GL_AMBIENT, mat4_ambient);
   mlist[3]->setMaterial(GL_DIFFUSE, mat4_diffuse);
@@ -808,7 +808,7 @@ int main(int argc, char *argv[])
   mlist[3]->setOpaqueness(true);
 
   Vector3f main_light_pos(light0Pos[0], light0Pos[1], light0Pos[2]);
-  GLight *main_light = new GLight(main_light_pos, 0.9); 
+  GLight *main_light = new GLight(main_light_pos, 1.0); 
   
   scene = new GScene(mlist);
 
@@ -846,43 +846,46 @@ int main(int argc, char *argv[])
   // Shooting Rays
   int x_size = 512;
   int y_size = 512;
-  float image_d = (y_size / 2.0) / tan((fovy / 2.0) * (PI / 180.0));
+  float image_d = ((float)y_size / 2.0) * (1.0 / tan((fovy / 2.0) * (PI / 180.0)));
 
   int depth = 1;
 
   BMP resultImage;
   resultImage.SetSize(x_size, y_size);
-  resultImage.SetBitDepth(8);
+  resultImage.SetBitDepth(24);
   
   for(int j = 0; j < y_size; j++)
   {
     for(int i = 0; i < x_size; i++)
     {
-      Vector3f dir_to_pixel((float)i - x_size/2.0, y_size/2.0 - (float)j, -image_d);
-      Vector3f origin(eye[0], eye[1], eye[2] + 400.0);
+      Vector3f dir_to_pixel((float)i - (float)x_size/2.0 + 0.5, (float)y_size/2.0 - (float)j, -image_d);
+      Vector3f origin(eye[0], eye[1], eye[2]);
+      //cout << image_d << endl;
 
+      //dir_to_pixel.normalize();
       GRay imgRay(origin, dir_to_pixel);
       vector<GModel*> mlist = scene->getModels();
 
       Color pixel_color;
       bool was_hit = false;
-      for(vector<GModel*>::iterator it = mlist.begin(); it != mlist.end(); it++)
-      {
-        pixel_color = imgRay.TraceRay((*it), depth, &was_hit, 0.0);
-        if(was_hit) 
-        {
-          //cout << i << ", " << j << " pixel color: " << pixel_color[0] << ", " << pixel_color[1] << ", " << pixel_color[2] << endl;
-          break;
-        }
-      }
+      pixel_color = imgRay.TraceRay(mlist, depth, &was_hit, 0.0);
 
-      if(!was_hit) 
+      if(!was_hit)
+      {
         pixel_color = Color::Zero();
+        //cout << "Not hit occured in: " << i << ", " << j << endl;
+      }
 
       resultImage(i, j)->Red = (int)floor(pixel_color[0] * 255.0);
       resultImage(i, j)->Green = (int)floor(pixel_color[1] * 255.0);
       resultImage(i, j)->Blue = (int)floor(pixel_color[2] * 255.0);
       resultImage(i, j)->Alpha = 0;
+
+      if(i == 256)
+      {
+        cout << "R, G, B at x = 255: " << (int)resultImage(i, j)->Red << ", " 
+          << (int)resultImage(i, j)->Green << ", " << (int)resultImage(i, j)->Blue << endl;
+      }
     }
 
     cout << "Processed " << j << "-th row, out of " << y_size << endl;

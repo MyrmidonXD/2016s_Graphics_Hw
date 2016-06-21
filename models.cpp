@@ -635,134 +635,151 @@ GRay::GRay(Vector3f &origin, Vector3f &direction)
     _direction.normalize();
 }
 
-Color GRay::TraceRay(GModel* target, int max_depth, bool *was_hit, float ray_limit)
+Color GRay::TraceRay(vector<GModel*> &mlist, int max_depth, bool *was_hit, float ray_limit)
 {
-  bool is_sphere = target->isSphere();
+  *was_hit = false;
 
-  if(max_depth == 0)
-  {
-    *was_hit = false;
-    return Color::Zero();
-  }
+  if(max_depth == 0) return Color::Zero();
 
-  // Find intersection point
-  Vector3f ic_point;
-  Vector3f ic_normal;
-  Color local_color;
-  
-  GSurface* nearest_surf;
-  Vector3f nearest_ic_point;
+  GModel *nearest_model = nullptr;
+  GSurface *nearest_surf = nullptr;
+  Vector3f nearest_ic_point(0.0, 0.0, 0.0);
   float min_distance = 50000.0;
-  
-  if(is_sphere)
+
+  if(mlist.empty())
+    cout << "model empty!!" << endl;
+  for(vector<GModel*>::iterator mit = mlist.begin(); mit != mlist.end(); mit++)
   {
-    Vector3f delta_p = target->getCenter() - _origin;
-    float u_dot_delta_p = _direction.dot(delta_p);
-    float r = target->getRadius();
-
-    float discriminant = (u_dot_delta_p * u_dot_delta_p) 
-                        - (delta_p.squaredNorm() - r * r);
-
-    if(discriminant < 0.0) // if not hit
+    bool is_sphere = (*mit)->isSphere();
+    if(is_sphere)
     {
-      *was_hit = false;
-      return Color::Zero();
+      Vector3f delta_p = (*mit)->getCenter() - _origin;
+      float u_dot_delta_p = _direction.dot(delta_p);
+      float r = (*mit)->getRadius();
+
+      float discriminant = (u_dot_delta_p * u_dot_delta_p) 
+                          - (delta_p.squaredNorm() - r * r);
+
+      if(discriminant < 0.0) // if not hits
+        continue;
+        
+      float s = u_dot_delta_p - sqrt(discriminant);
+        
+      if((s < 0.0) || (max_depth < 0 && (s > ray_limit || s < 0.1)))
+        continue;
+
+      if(s < min_distance)
+      {
+        *was_hit = true;
+        nearest_model = (*mit);
+        nearest_ic_point = _origin + (s * _direction);
+        min_distance = s;
+      }
     }
     else
     {
-      float s = u_dot_delta_p - sqrt(discriminant);
-      
-      if((s < 0) || (max_depth < 0 && ((ic_point - _origin).norm() > ray_limit || (ic_point-_origin).norm() < 0.1)))
-      {
-        *was_hit = false;
-        return Color::Zero();
-      }
-      
-      *was_hit = true;
-      ic_point = _origin + (s * _direction);
-    }
-  }
-  else
-  {
-    // For all surfaces in this model, check whether the ray hits one of those.
-    vector<GSurface*> &surflist = target->getSurfaces();
+      // For all surfaces in this model, check whether the ray hits one of those.
+      vector<GSurface*> &surflist = (*mit)->getSurfaces();
 
-    *was_hit = false;
+      Vector3f min_ic_point;
+      GSurface *min_surf;
+      float min_surf_dist = 45000.0;
 
-    for(vector<GSurface*>::iterator it = surflist.begin(); it != surflist.end(); it++)
-    {
-      if((*it)->checkRayHit(this, &ic_point))
+      for(vector<GSurface*>::iterator it = surflist.begin(); it != surflist.end(); it++)
       {
-        float distance = (ic_point - _origin).norm()
-        if(max_depth < 0 && (distance > ray_limit || distance < 0.1)) continue;
-        
-        *was_hit = true;
-        if(distance < min_distance)
+        Vector3f ic_point;
+        if((*it)->checkRayHit(this, &ic_point))
         {
-          min_distance = distance;
-          nearest_surf = (*it);
-          nearest_ic_point = ic_point;
+          float distance = (ic_point - _origin).norm();
+          if(max_depth < 0 && (distance > ray_limit || distance < 2.0)) continue;
+          
+          *was_hit = true;
+          if(distance < min_surf_dist)
+          {
+            min_surf_dist = distance;
+            min_surf = (*it);
+            min_ic_point = ic_point;
+          }
         }
       }
-    }
 
-    if(*was_hit == false) 
-      return Color::Zero();
+      if(min_surf_dist < min_distance)
+      {
+        nearest_model = (*mit);
+        nearest_ic_point = min_ic_point;
+        min_distance = min_surf_dist;
+        nearest_surf = min_surf;
+      }
+    }
   }
 
-  if(max_depth < 0) 
+  if(max_depth < 0 || *was_hit == false) 
   {
     return Color::Zero(); // returning the result of hit/not hit, for shadow rays.
   }
+
   // Shadow Ray Casting
   vector<GLight*> activeLight;
-  vector<GModel*> mlist = target->getScene()->getModels();
 
   for(vector<GLight*>::iterator it = GLight::LightList.begin(); it != GLight::LightList.end(); it++)
   {
-    Vector3f dir = (*it)->GetPosition() - ic_point;
-    GRay shadow_ray(ic_point, dir);
+    Vector3f dir = (*it)->GetPosition() - nearest_ic_point;
+    GRay shadow_ray(nearest_ic_point, dir);
     bool result = false;
-    for(vector<GModel*>::iterator mit = mlist.begin(); mit != mlist.end(); mit++)
-    {
-      shadow_ray.TraceRay((*mit), -1, &result, dir.norm()); // shadow ray casting
-      if(result == true)
-      {
-        if((*mit)->isOpaque())
-        {
-          cout << "Shadow ray hitted!" << endl;
-          break;
-        }
-        else 
-          result = false;        
-      }
-    }
-
+    
+    shadow_ray.TraceRay(mlist, -1, &result, dir.norm()); // shadow ray casting
+    
+      // cout << "Shadow ray hitted!" << endl; // TODO check for opaqueness/transparency.      
     if(result == false)
       activeLight.push_back(*it);
   }
 
   // Phong Ilumination
-  float I_a = 0.2;
-  if(is_sphere)
-    ic_normal = (ic_point - target->getCenter()).normalized();
+  float I_a = 0.1;
+  Vector3f ic_normal(0.0, 0.0, 0.0);
+  if(nearest_model->isSphere())
+  {
+    ic_normal = (nearest_ic_point - nearest_model->getCenter()).normalized();
+  }
+  else
+  {
+    ic_normal = (nearest_surf->getPointNormal(nearest_ic_point));
+  }
+
+  //cout << "Normal: " << ic_normal[0] << ", " << ic_normal[1] << ", " << ic_normal[2] << endl;
   
-  Color ambient_color = target->getAmbient(I_a);
+  //cout << "nearest_ic_point: " << nearest_ic_point[0] << ", " << nearest_ic_point[1] << ", " << nearest_ic_point[2] << endl;
+
+  Color ambient_color = nearest_model->getAmbient(I_a);
   Color diffuse_color = Color::Zero();
   Color specular_color = Color::Zero();
 
   for(vector<GLight*>::iterator it = activeLight.begin(); it != activeLight.end(); it++)
   {
-    Vector3f N = ic_normal;
-    Vector3f L = ((*it)->GetPosition() - ic_point).normalized();
-    Vector3f R = ((2*L).dot(N))*N - L;
-    Vector3f V = _direction;
+    Vector3f N = ic_normal.normalized();
+    Vector3f L = ((*it)->GetPosition() - nearest_ic_point).normalized();
+    Vector3f R = ((2.0*L).dot(N))*N - L;
+    Vector3f V = _direction.normalized();
 
-    diffuse_color += (N.dot(L)) * target->getDiffuse((*it)->GetIntensity());
-    specular_color += pow(R.dot(V), target->getShininess()) * target->getSpecular((*it)->GetIntensity());
+    Color current_diffuse;
+    Color current_specular;
+
+    if(N.dot(L) < 0.0) 
+    {
+      current_diffuse = Color::Zero();
+      current_specular = Color::Zero();
+    }
+    else 
+    {
+      current_diffuse = (N.dot(L)) * nearest_model->getDiffuse((*it)->GetIntensity());
+      current_specular = pow(R.dot(V), nearest_model->getShininess()) * nearest_model->getSpecular((*it)->GetIntensity());
+    }
+
+    diffuse_color = diffuse_color + current_diffuse;
+    specular_color = specular_color + current_specular;
   }
 
-  local_color = ambient_color + diffuse_color + specular_color;    
+  Color local_color = ambient_color + diffuse_color + specular_color;    
 
   // TODO Reflection
   
