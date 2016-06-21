@@ -322,6 +322,11 @@ GModel::GModel(vector<GSurface*> &slist)
   _surfaces = slist; // copy assignment
 }
 
+void setScene(GScene *scene)
+{
+  _parent_scene = scene;
+}
+
 void GModel::setMaterial(GLenum pname, const GLfloat *params)
 {
   switch(pname)
@@ -411,15 +416,19 @@ GScene::GScene(vector<GModel*> &mlist)
   
   for(vector<GModel*>::const_iterator it = mlist.begin(); it != mlist.end(); it++)
   {
+    /*
     if((*it)->isOpaque() == false) // if current model is translucent
     {
       vector<GSurface*>& surflist = (*it)->getSurfaces();
       _translucent_surfs.insert(_translucent_surfs.end(), surflist.begin(), surflist.end());
     }
+    */
+
+    (*it)->setScene(this);
   }
 
   // BSP Construction
-  _BSPTree = BSPNode::constructTree(_translucent_surfs);
+  //_BSPTree = BSPNode::constructTree(_translucent_surfs);
 
   // DEBUG: BSP Print
   //_BSPTree->printTree("");
@@ -549,5 +558,97 @@ BSPNode::~BSPNode(void)
   if(_backChild != nullptr) delete _backChild;
   
   if(_surface != nullptr) delete _surface;
+}
+
+
+/////////////////////////////////////////
+//                                     //
+// class GRay implementation           //
+//                                     //
+/////////////////////////////////////////
+
+GRay::GRay(Vector3f &origin, Vector3f &direction)
+{
+  _origin = origin;
+  _direction = direction;
+
+  float epsilon = 1e-4;
+
+  if(fabs(_direction.norm() - 1.0) > epsilon)
+    _direction.normalize();
+}
+
+Color GRay::TraceRay(GModel* target, int max_depth, bool *was_hit);
+{
+  bool is_sphere = target->isSphere();
+
+  // Find intersection point and get the color of that point.
+  Vector3f ic_point;
+  Color local_color;
+  if(is_sphere)
+  {
+    Vector3f delta_p = target->getCenter() - _origin;
+    float u_dot_delta_p = _direction.dot(delta_p);
+    float r = target->getRadius();
+
+    float discriminant = (u_dot_delta_p * u_dot_delta_p) 
+                        - (delta_p.squaredNorm() - r * r);
+
+    if(discriminant < 0.0) // if not hit
+    {
+      *was_hit = false;
+      return Color::Zero();
+    }
+    
+    float s = u_dot_delta_p - sqrt(discriminant);
+    ic_point = _origin + (s * _direction);
+  }
+  else
+  {
+    // For all surfaces in this model, check whether the ray hits one of those.
+    vector<GSurface*> &surflist = target->getSurfaces();
+
+    *was_hit = false;
+    for(vector<GSurface*>::iterator it = surflist.begin(); it != surflist.end(); it++)
+    {
+      if((*it)->checkRayHit(this, &ic_point))
+      {
+        *was_hit = true;
+        break;        
+      }
+    }
+
+    if(*was_hit == false) 
+      return Color::Zero();
+  }
+
+  // Shadow Ray Casting
+  vector<GLight*> activeLight;
+  vector<GModel*> mlist = target->getScene()->getModels();
+
+  for(vector<GLight*>::iterator it = GLight::LightList.begin(); it != GLight::LightList.end(); it++)
+  {
+    GRay shadow_ray(ic_point, (*it)->GetPosition - ic_point);
+    bool result = false;
+    for(vector<GModel*>::iterator mit = mlist.begin(); mit != mlist.end(); mit++)
+    {
+      TraceRay((*mit), 1, &result);
+      if(result == true)
+      {
+        if((*mit)->isOpaque()) 
+          break;
+        else 
+          result = false;        
+      }
+    }
+
+    if(result == false)
+      activeLight.push_back(*it);
+  }
+
+
+
+
+
 }
 

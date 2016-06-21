@@ -26,6 +26,8 @@ class GModel;
 class GScene;
 class BSPNode;
 
+typedef Color Vector3f;
+
 // Class representing a surface of the model
 class GSurface 
 {
@@ -47,6 +49,13 @@ class GSurface
     // @retval 0 if point is on the surface, >0 if point is in the front, 
     //        <0 if point is in the back.
     int checkPointPosition(Vector3f &point);
+
+    // Retrive the color of that point on current surface
+    Color getPointColor(Vector3f &point);
+
+    // Check the ray has hit in this polygon.
+    // If the ray has hit, then return hit point coordinate to hit_point
+    bool checkRayHit(GRay *ray, Vector3f *hit_point);
 
     // Set parent model to get material info.
     void setModel(GModel *model) { _model = model; }
@@ -84,6 +93,7 @@ class GModel
     GModel(vector<GSurface*> &slist); // Surface list constructor
    
     // Setters
+    void setScene(GScene *scene); // Set Scene Pointer
     void setMaterial(GLenum pname, const GLfloat* params); // Set Material values.
     void setShininess(GLfloat value); // Set Material Shininess (= glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, value);)
     void setOpaqueness(bool isOpaque); // Set opaque flag to the value of isOpaque.
@@ -94,6 +104,7 @@ class GModel
     bool isSphere(void) { return _flag_sphere; } // Get flag for sphere
     const Vector3f& getCenter(void) { return _center; }
     float getRadius(void) { return _radius; }
+    GScene* getScene(void) { return _parent_scene; }
     vector<GSurface*>& getSurfaces(void) { return _surfaces; }
 
     // Draw this model
@@ -120,6 +131,8 @@ class GModel
     // Surface list
     vector<GSurface*> _surfaces;
 
+    // Scene pointer
+    GScene *_parent_scene;
 };
 
 // class representing the whole scene objects
@@ -133,6 +146,9 @@ class GScene
 
     // Add a model to the scene.
     bool addModel(GModel *model);
+
+    // Get a model List
+    vector<GModel*>& getModels(void) { return _models; } 
 
     // Draw a scene.
     bool drawScene(bool useBSP, Vector3f &camPoint);
@@ -171,6 +187,39 @@ class BSPNode
     
     BSPNode *_frontChild;
     BSPNode *_backChild;
+};
+
+class GRay
+{
+  public:
+    // Constructor
+    GRay(Vector3f &origin, Vector3f &direction);
+
+    // Ray Tracing
+    // If ray hit the target, then set was_hit to true.
+    Color TraceRay(GModel* target, int max_depth, bool *was_hit);
+    
+  private:
+    Vector3f _origin;
+    Vector3f _direction;
+};
+
+class GLight
+{
+  public:
+    // Constructor
+    GLight(Vector3f &pos, float intensity);
+    
+    // Static member for holding Light List
+    static vector<GLight*> LightList;
+
+    // Getters
+    Vector3f& GetPosition(void);
+    float GetIntensity(void);
+
+  private:
+    Vector3f _position;
+    float _intensity;
 };
 
 #endif
