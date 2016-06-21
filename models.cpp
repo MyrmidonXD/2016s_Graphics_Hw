@@ -203,6 +203,38 @@ int GSurface::checkPointPosition(Vector3f &point)
     return 0;
 }
 
+Vector3f& GSurface::getPointNormal(Vector3f &point)
+{
+  // TODO Implement phong shading?
+
+  return _surf_normal; 
+}
+
+bool GSurface::checkRayHit(GRay *ray, Vector3f *hit_point)
+{
+  float s = -(_D + _surf_normal.dot(ray->getOrigin())) / (_surf_normal.dot(ray->getDirection()));
+
+  Vector3f p = ray->getOrigin() + (s * ray->getDirection());
+
+  bool flag = false;
+  for(int i = 0; i < _vertices.size(); i++)
+  {
+    Vector3f winding = _vertices[(i+1)%_vertices.size()] - _vertices[i];
+    Vector3f to_p = p - _vertices[i];
+
+    float res = _surf_normal.dot(winding.cross(to_p));
+    bool new_flag = (res > 0) ? true : false;
+
+    if(i != 0 && flag != new_flag)
+      return false;
+
+    flag = new_flag;
+  }
+
+  (*hit_point) = p;
+  return true;
+}
+
 void GSurface::pushNormal(Vector3f normal)
 {
   _vertex_normals.push_back(normal);
@@ -363,6 +395,18 @@ void GModel::setSphere(float radius, Vector3f &center)
   _radius = radius;
   _center = center;
   _flag_sphere = true;
+}
+
+Color GModel::getAmbient(float I_a)
+{
+  Color a(_ambient[0], _ambient[1], _ambient[2]);
+  return I_a * a;
+}
+
+Color GModel::getDiffuse(float I_l)
+{
+  Color d(_diffuse[0], _diffuse[1], _diffuse[2]);
+  return I_l * d;
 }
 
 void GModel::drawModel(void)
@@ -584,6 +628,7 @@ Color GRay::TraceRay(GModel* target, int max_depth, bool *was_hit);
 
   // Find intersection point and get the color of that point.
   Vector3f ic_point;
+  Vector3f ic_normal;
   Color local_color;
   if(is_sphere)
   {
@@ -614,6 +659,7 @@ Color GRay::TraceRay(GModel* target, int max_depth, bool *was_hit);
       if((*it)->checkRayHit(this, &ic_point))
       {
         *was_hit = true;
+        ic_normal = (*it)->getPointNormal(ic_point);
         break;        
       }
     }
@@ -646,9 +692,34 @@ Color GRay::TraceRay(GModel* target, int max_depth, bool *was_hit);
       activeLight.push_back(*it);
   }
 
+  // Phong Ilumination
+  float I_a = 0.2;
+  if(is_sphere)
+    ic_normal = (ic_point - target->getCenter()).normalized();
+  
+  Color ambient_color = target->getAmbient(I_a);
+  Color diffuse_color = Color::Zero();
+  Color specular_color = Color::Zero();
 
+  for(vector<GLight*>::iterator it = activeLight.begin(); it != activeLight.end(); it++)
+  {
+    Vector3f N = ic_normal;
+    Vector3f L = ((*it)->GetPosition() - ic_point).normalized();
+    Vector3f R = ((2*L).dot(N))*N - L;
+    Vector3f V = _direction;
 
+    diffuse_color += (N.dot(L)) * target->getDiffuse((*it)->GetIntensity());
+    specular_color += pow(R.dot(V), target->getShininess()) * target->getSpecular((*it)->GetIntensity());
+  }
 
+  local_color = ambient_color + diffuse_color + specular_color;    
 
+  // TODO Reflection
+  
+  // TODO Refraction
+  
+  // Return result
+
+  return local_color;
 }
 

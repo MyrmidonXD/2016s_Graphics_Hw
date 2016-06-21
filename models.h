@@ -50,8 +50,8 @@ class GSurface
     //        <0 if point is in the back.
     int checkPointPosition(Vector3f &point);
 
-    // Retrive the color of that point on current surface
-    Color getPointColor(Vector3f &point);
+    // Retrive the normal of that point on current surface
+    Vector3f& getPointNormal(Vector3f &point);
 
     // Check the ray has hit in this polygon.
     // If the ray has hit, then return hit point coordinate to hit_point
@@ -107,12 +107,22 @@ class GModel
     GScene* getScene(void) { return _parent_scene; }
     vector<GSurface*>& getSurfaces(void) { return _surfaces; }
 
+    Color getAmbient(float I_a);
+    Color getDiffuse(float I_l);
+    Color getSpecular(float I_l);
+    float getShininess(void);
+
     // Draw this model
     void drawModel(void);
 
     void applyMaterial(void); // Apply material coefficients to OpenGL.
 
     void addSurface(GSurface *surf); // Add the surface to this model.
+
+    // reflection/refraction ratio
+
+    float reflectance = 1.0;
+    float refractance = 0.0;
 
   private:
     // Material properties
@@ -198,8 +208,11 @@ class GRay
     // Ray Tracing
     // If ray hit the target, then set was_hit to true.
     Color TraceRay(GModel* target, int max_depth, bool *was_hit);
-    
-  private:
+  
+    Vector3f& getOrigin(void) { return _origin; }
+    Vector3f& getDirection(void) { return _direction; }
+  
+  private:   
     Vector3f _origin;
     Vector3f _direction;
 };
