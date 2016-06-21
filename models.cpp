@@ -649,6 +649,11 @@ Color GRay::TraceRay(GModel* target, int max_depth, bool *was_hit, float ray_lim
   Vector3f ic_point;
   Vector3f ic_normal;
   Color local_color;
+  
+  GSurface* nearest_surf;
+  Vector3f nearest_ic_point;
+  float min_distance = 50000.0;
+  
   if(is_sphere)
   {
     Vector3f delta_p = target->getCenter() - _origin;
@@ -683,15 +688,21 @@ Color GRay::TraceRay(GModel* target, int max_depth, bool *was_hit, float ray_lim
     vector<GSurface*> &surflist = target->getSurfaces();
 
     *was_hit = false;
+
     for(vector<GSurface*>::iterator it = surflist.begin(); it != surflist.end(); it++)
     {
       if((*it)->checkRayHit(this, &ic_point))
       {
-        if(max_depth < 0 && ((ic_point - _origin).norm() > ray_limit || (ic_point-_origin).norm() < 0.1)) continue;
+        float distance = (ic_point - _origin).norm()
+        if(max_depth < 0 && (distance > ray_limit || distance < 0.1)) continue;
         
         *was_hit = true;
-        ic_normal = (*it)->getPointNormal(ic_point);
-        break;        
+        if(distance < min_distance)
+        {
+          min_distance = distance;
+          nearest_surf = (*it);
+          nearest_ic_point = ic_point;
+        }
       }
     }
 

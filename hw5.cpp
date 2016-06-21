@@ -728,57 +728,6 @@ void display()
     }
     glPopMatrix();
 
-    // Material spheres drawing
-    glPushMatrix();
-    {
-      glPushMatrix();
-      glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, mat2_ambient);
-      glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, mat2_diffuse);
-      glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, mat2_specular);
-      glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, mat2_shininess);
-      glTranslatef(0.0, 200.0, -150.0);
-      glutSolidSphere(20.0, 16, 16);
-      glPopMatrix();
-      
-      glPushMatrix();
-      glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, mat3_ambient);
-      glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, mat3_diffuse);
-      glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, mat3_specular);
-      glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, mat3_shininess);
-      glTranslatef(142.66, 200.0, -46.35);
-      glutSolidSphere(20.0, 16, 16);
-      glPopMatrix();
-      
-      glPushMatrix();
-      glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, mat4_ambient);
-      glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, mat4_diffuse);
-      glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, mat4_specular);
-      glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, mat4_shininess);
-      glTranslatef(-142.66, 200.0, -46.35);
-      glutSolidSphere(20.0, 16, 16);
-      glPopMatrix();
-      
-      glPushMatrix();
-      glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, mat5_ambient);
-      glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, mat5_diffuse);
-      glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, mat5_specular);
-      glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, mat5_shininess);
-      glTranslatef(-88.17, 200.0, 121.35);
-      glutSolidSphere(20.0, 16, 16);
-      glPopMatrix();
-      
-      glPushMatrix();
-      glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, mat6_ambient);
-      glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, mat6_diffuse);
-      glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, mat6_specular);
-      glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, mat6_shininess);
-      glTranslatef(88.17, 200.0, 121.35);
-      glutSolidSphere(20.0, 16, 16);
-      glPopMatrix();
-    }
-    glPopMatrix();
-        
-
     glPushMatrix();
     /* Draw scene here */
     glLineWidth(1.0);
@@ -910,7 +859,7 @@ int main(int argc, char *argv[])
     for(int i = 0; i < x_size; i++)
     {
       Vector3f dir_to_pixel((float)i - x_size/2.0, y_size/2.0 - (float)j, -image_d);
-      Vector3f origin(eye[0], eye[1], eye[2]);
+      Vector3f origin(eye[0], eye[1], eye[2] + 400.0);
 
       GRay imgRay(origin, dir_to_pixel);
       vector<GModel*> mlist = scene->getModels();
