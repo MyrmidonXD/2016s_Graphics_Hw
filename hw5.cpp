@@ -79,7 +79,7 @@ string sp_type = "";
 //////////////////// Needed field for HW4
 // Lights
 GLfloat light0Pos[] = { 0.0, 300.0, 0.0, 1.0 };
-GLfloat light1Pos[] = { 0.0, 400.0, 0.0, 1.0 };
+GLfloat light1Pos[] = { -180.0, 200.0, 300.0, 1.0 };
 GLfloat light2Pos[] = { 0.0, 0.0, -200.0, 1.0 };
 GLfloat light3Pos[] = { 0.0, 100.0, 200.0, 1.0};
 
@@ -92,8 +92,8 @@ bool useBSP = true;
 //-- Material
 // 1) For BackGround.
 GLfloat tr1_ambient[] = { 0.1, 0.1, 0.1, 1.0 };
-GLfloat tr1_diffuse[] = { 0.3, 0.3, 0.3, 1.0 };
-GLfloat tr1_specular[] = { 0.6, 0.6, 0.6, 1.0 };
+GLfloat tr1_diffuse[] = { 0.6, 0.6, 0.6, 1.0 };
+GLfloat tr1_specular[] = { 0.2, 0.2, 0.2, 1.0 };
 GLfloat tr1_shininess = 64.0;
 
 // 2) For objects
@@ -117,8 +117,8 @@ GLfloat tr4_shininess = 108.0;
 
 GLfloat mat2_ambient[] = { 0.1, 0.1, 0.1, 1.0 };
 GLfloat mat2_diffuse[] = { 0.2, 0.2, 0.2, 1.0 };
-GLfloat mat2_specular[] = { 0.7, 0.7, 0.7, 1.0 };
-GLfloat mat2_shininess = 16.0;
+GLfloat mat2_specular[] = { 0.5, 0.5, 0.5, 1.0 };
+GLfloat mat2_shininess = 90.0;
 
 // 4) Gold
 
@@ -130,8 +130,8 @@ GLfloat mat3_shininess = 16.0;
 // 5) Rubber(red)
 
 GLfloat mat4_ambient[] = { 0.2, 0.0, 0.0, 1.0 };
-GLfloat mat4_diffuse[] = { 0.7, 0.0, 0.0, 1.0 };
-GLfloat mat4_specular[] = { 0.8, 0.8, 0.8, 1.0 };
+GLfloat mat4_diffuse[] = { 0.9, 0.0, 0.0, 1.0 };
+GLfloat mat4_specular[] = { 0.3, 0.3, 0.3, 1.0 };
 GLfloat mat4_shininess = 64.0;
 
 // 6) Skin
@@ -782,6 +782,8 @@ int main(int argc, char *argv[])
   mlist[0]->setMaterial(GL_SPECULAR, tr1_specular);
   mlist[0]->setShininess(tr1_shininess);
   mlist[0]->setOpaqueness(true);
+  mlist[0]->reflectance = 0.2;
+  mlist[0]->refractance = 0.0;
 
   mlist.push_back(makeCube(40.0, 0.0, 2.0, 120.0, 80.0, 82.0));
 
@@ -790,6 +792,8 @@ int main(int argc, char *argv[])
   mlist[1]->setMaterial(GL_SPECULAR, mat2_specular);
   mlist[1]->setShininess(mat2_shininess);
   mlist[1]->setOpaqueness(true);
+  mlist[1]->reflectance = 0.1;
+  mlist[1]->refractance = 0.0;
 
   mlist.push_back(makeCube(55.0, 125.0, -35.0, 125.0, 195.0, 45.0));
   
@@ -798,6 +802,8 @@ int main(int argc, char *argv[])
   mlist[2]->setMaterial(GL_SPECULAR, mat3_specular);
   mlist[2]->setShininess(mat3_shininess);
   mlist[2]->setOpaqueness(true);
+  mlist[2]->reflectance = 0.0;
+  mlist[2]->refractance = 0.0;
   
   mlist.push_back(makeSphere(70.0, -60.0, 70.0, -120.0));
 
@@ -806,9 +812,14 @@ int main(int argc, char *argv[])
   mlist[3]->setMaterial(GL_SPECULAR, mat4_specular);
   mlist[3]->setShininess(mat4_shininess);
   mlist[3]->setOpaqueness(true);
+  mlist[3]->reflectance = 0.2;
+  mlist[3]->refractance = 0.0;
 
   Vector3f main_light_pos(light0Pos[0], light0Pos[1], light0Pos[2]);
-  GLight *main_light = new GLight(main_light_pos, 1.0); 
+  GLight *main_light = new GLight(main_light_pos, 0.8);
+
+  Vector3f sub_light_pos(light1Pos[0], light1Pos[1], light1Pos[2]);
+  GLight *sub_light = new GLight(sub_light_pos, 0.6);
   
   scene = new GScene(mlist);
 
@@ -848,7 +859,7 @@ int main(int argc, char *argv[])
   int y_size = 512;
   float image_d = ((float)y_size / 2.0) * (1.0 / tan((fovy / 2.0) * (PI / 180.0)));
 
-  int depth = 1;
+  int depth = 5;
 
   BMP resultImage;
   resultImage.SetSize(x_size, y_size);
@@ -858,7 +869,7 @@ int main(int argc, char *argv[])
   {
     for(int i = 0; i < x_size; i++)
     {
-      Vector3f dir_to_pixel((float)i - (float)x_size/2.0 + 0.5, (float)y_size/2.0 - (float)j, -image_d);
+      Vector3f dir_to_pixel((float)i - (float)x_size/2.0 + 0.5, (float)y_size/2.0 - (float)j - 0.5, -image_d);
       Vector3f origin(eye[0], eye[1], eye[2]);
       //cout << image_d << endl;
 
@@ -876,17 +887,16 @@ int main(int argc, char *argv[])
         //cout << "Not hit occured in: " << i << ", " << j << endl;
       }
 
-      resultImage(i, j)->Red = (int)floor(pixel_color[0] * 255.0);
-      resultImage(i, j)->Green = (int)floor(pixel_color[1] * 255.0);
-      resultImage(i, j)->Blue = (int)floor(pixel_color[2] * 255.0);
+      resultImage(i, j)->Red = (pixel_color[0] < 1.0) ? (int)floor(pixel_color[0] * 255.0) : 255;
+      resultImage(i, j)->Green = (pixel_color[1] < 1.0) ? (int)floor(pixel_color[1] * 255.0) : 255;
+      resultImage(i, j)->Blue = (pixel_color[2] < 1.0) ? (int)floor(pixel_color[2] * 255.0) : 255;
       resultImage(i, j)->Alpha = 0;
 
-      if(i == 256)
-      {
-        cout << "R, G, B at x = 255: " << (int)resultImage(i, j)->Red << ", " 
-          << (int)resultImage(i, j)->Green << ", " << (int)resultImage(i, j)->Blue << endl;
+      if((int)resultImage(i, j)->Red > 255) resultImage(i, j)->Red = 255;
+      if((int)resultImage(i, j)->Green > 255) resultImage(i, j)->Green = 255;
+      if((int)resultImage(i, j)->Blue > 255) resultImage(i, j)->Blue = 255;
+
       }
-    }
 
     cout << "Processed " << j << "-th row, out of " << y_size << endl;
     //resultImage.WriteToFile("output.bmp");

@@ -665,7 +665,7 @@ Color GRay::TraceRay(vector<GModel*> &mlist, int max_depth, bool *was_hit, float
         
       float s = u_dot_delta_p - sqrt(discriminant);
         
-      if((s < 0.0) || (max_depth < 0 && (s > ray_limit || s < 0.1)))
+      if((s < 0.2) || (max_depth < 0 && (s > ray_limit)))
         continue;
 
       if(s < min_distance)
@@ -691,7 +691,7 @@ Color GRay::TraceRay(vector<GModel*> &mlist, int max_depth, bool *was_hit, float
         if((*it)->checkRayHit(this, &ic_point))
         {
           float distance = (ic_point - _origin).norm();
-          if(max_depth < 0 && (distance > ray_limit || distance < 2.0)) continue;
+          if(distance < 0.2 || (max_depth < 0 && distance > ray_limit)) continue;
           
           *was_hit = true;
           if(distance < min_surf_dist)
@@ -759,7 +759,7 @@ Color GRay::TraceRay(vector<GModel*> &mlist, int max_depth, bool *was_hit, float
     Vector3f N = ic_normal.normalized();
     Vector3f L = ((*it)->GetPosition() - nearest_ic_point).normalized();
     Vector3f R = ((2.0*L).dot(N))*N - L;
-    Vector3f V = _direction.normalized();
+    Vector3f V = ((-1.0) * _direction).normalized();
 
     Color current_diffuse;
     Color current_specular;
@@ -769,7 +769,12 @@ Color GRay::TraceRay(vector<GModel*> &mlist, int max_depth, bool *was_hit, float
       current_diffuse = Color::Zero();
       current_specular = Color::Zero();
     }
-    else 
+    else if(R.dot(V) < 0.0) 
+    {
+      current_diffuse = (N.dot(L)) * nearest_model->getDiffuse((*it)->GetIntensity());
+      current_specular = Color::Zero();
+    }
+    else
     {
       current_diffuse = (N.dot(L)) * nearest_model->getDiffuse((*it)->GetIntensity());
       current_specular = pow(R.dot(V), nearest_model->getShininess()) * nearest_model->getSpecular((*it)->GetIntensity());
@@ -782,12 +787,27 @@ Color GRay::TraceRay(vector<GModel*> &mlist, int max_depth, bool *was_hit, float
   Color local_color = ambient_color + diffuse_color + specular_color;    
 
   // TODO Reflection
+ 
+  ic_normal.normalized();
+  Vector3f reflect_dir = (-2.0 * _direction).dot(ic_normal)*ic_normal - (-1.0)*_direction;
+  GRay reflect_ray(nearest_ic_point, reflect_dir);
+
+  bool reflect_hit = false;
+  Color reflect_color = reflect_ray.TraceRay(mlist, max_depth-1, &reflect_hit, 0.0);
+  if(reflect_hit == false) 
+    reflect_color = Color::Zero();
   
   // TODO Refraction
   
   // Return result
+  
+  float a = nearest_model->reflectance;
+  float b = nearest_model->refractance;
 
-  return local_color;
+  Color result_color = (1.0 - a - b) * local_color + a * reflect_color;
+  //Color result_color = local_color;
+
+  return result_color;
 }
 
 /////////////////////////////////////////
