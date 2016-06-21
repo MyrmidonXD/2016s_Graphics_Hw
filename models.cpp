@@ -214,6 +214,8 @@ bool GSurface::checkRayHit(GRay *ray, Vector3f *hit_point)
 {
   float s = -(_D + _surf_normal.dot(ray->getOrigin())) / (_surf_normal.dot(ray->getDirection()));
 
+  if(s < 0.0) return false;
+
   Vector3f p = ray->getOrigin() + (s * ray->getDirection());
 
   bool flag = false;
@@ -633,7 +635,7 @@ GRay::GRay(Vector3f &origin, Vector3f &direction)
     _direction.normalize();
 }
 
-Color GRay::TraceRay(GModel* target, int max_depth, bool *was_hit)
+Color GRay::TraceRay(GModel* target, int max_depth, bool *was_hit, float ray_limit)
 {
   bool is_sphere = target->isSphere();
 
@@ -663,8 +665,15 @@ Color GRay::TraceRay(GModel* target, int max_depth, bool *was_hit)
     }
     else
     {
-      *was_hit = true;
       float s = u_dot_delta_p - sqrt(discriminant);
+      
+      if((s < 0) || (max_depth < 0 && ((ic_point - _origin).norm() > ray_limit || (ic_point-_origin).norm() < 0.1)))
+      {
+        *was_hit = false;
+        return Color::Zero();
+      }
+      
+      *was_hit = true;
       ic_point = _origin + (s * _direction);
     }
   }
@@ -678,6 +687,8 @@ Color GRay::TraceRay(GModel* target, int max_depth, bool *was_hit)
     {
       if((*it)->checkRayHit(this, &ic_point))
       {
+        if(max_depth < 0 && ((ic_point - _origin).norm() > ray_limit || (ic_point-_origin).norm() < 0.1)) continue;
+        
         *was_hit = true;
         ic_normal = (*it)->getPointNormal(ic_point);
         break;        
@@ -689,8 +700,9 @@ Color GRay::TraceRay(GModel* target, int max_depth, bool *was_hit)
   }
 
   if(max_depth < 0) 
+  {
     return Color::Zero(); // returning the result of hit/not hit, for shadow rays.
-
+  }
   // Shadow Ray Casting
   vector<GLight*> activeLight;
   vector<GModel*> mlist = target->getScene()->getModels();
@@ -702,11 +714,14 @@ Color GRay::TraceRay(GModel* target, int max_depth, bool *was_hit)
     bool result = false;
     for(vector<GModel*>::iterator mit = mlist.begin(); mit != mlist.end(); mit++)
     {
-      shadow_ray.TraceRay((*mit), -1, &result); // shadow ray casting
+      shadow_ray.TraceRay((*mit), -1, &result, dir.norm()); // shadow ray casting
       if(result == true)
       {
-        if((*mit)->isOpaque()) 
+        if((*mit)->isOpaque())
+        {
+          cout << "Shadow ray hitted!" << endl;
           break;
+        }
         else 
           result = false;        
       }
@@ -757,6 +772,8 @@ GLight::GLight(Vector3f &pos, float intensity)
 {
   _position = pos;
   _intensity = intensity;
+  
+  GLight::LightList.push_back(this);
 }
 
 vector<GLight*> GLight::LightList;

@@ -1,8 +1,8 @@
 CC=g++
-CFLAGS=-std=c++11 -g -lm -lGL -lGLU -lglut -I ./Eigen -I . -I ./bitmap
+CFLAGS=-std=c++11 -O3 -lm -lGL -lGLU -lglut -I ./Eigen -I . -I ./bitmap
 
-OBJ=parser.o spline.o models.o hw5.o
-DEPS=parser.h spline.h models.h
+OBJ=parser.o spline.o models.o bitmap/EasyBMP.o hw5.o
+DEPS=parser.h spline.h models.h bitmap/EasyBMP.h
 
 .PHONY: clean run
 

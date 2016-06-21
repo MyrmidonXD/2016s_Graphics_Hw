@@ -210,7 +210,7 @@ class GRay
     // Ray Tracing
     // If ray hit the target, then set was_hit to true.
     // If max_depth less than zero, then it means shadow ray.
-    Color TraceRay(GModel* target, int max_depth, bool *was_hit);
+    Color TraceRay(GModel* target, int max_depth, bool *was_hit, float ray_limit);
   
     Vector3f& getOrigin(void) { return _origin; }
     Vector3f& getDirection(void) { return _direction; }

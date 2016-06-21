@@ -18,6 +18,8 @@
 #include <models.h>
 #include <EasyBMP.h>
 
+#define PI 3.14159265
+
 using namespace std;
 using namespace Eigen;
 
@@ -855,6 +857,9 @@ int main(int argc, char *argv[])
   mlist[3]->setMaterial(GL_SPECULAR, mat4_specular);
   mlist[3]->setShininess(mat4_shininess);
   mlist[3]->setOpaqueness(true);
+
+  Vector3f main_light_pos(light0Pos[0], light0Pos[1], light0Pos[2]);
+  GLight *main_light = new GLight(main_light_pos, 0.9); 
   
   scene = new GScene(mlist);
 
@@ -890,4 +895,51 @@ int main(int argc, char *argv[])
   }
 
   // Shooting Rays
+  int x_size = 512;
+  int y_size = 512;
+  float image_d = (y_size / 2.0) / tan((fovy / 2.0) * (PI / 180.0));
+
+  int depth = 1;
+
+  BMP resultImage;
+  resultImage.SetSize(x_size, y_size);
+  resultImage.SetBitDepth(8);
+  
+  for(int j = 0; j < y_size; j++)
+  {
+    for(int i = 0; i < x_size; i++)
+    {
+      Vector3f dir_to_pixel((float)i - x_size/2.0, y_size/2.0 - (float)j, -image_d);
+      Vector3f origin(eye[0], eye[1], eye[2]);
+
+      GRay imgRay(origin, dir_to_pixel);
+      vector<GModel*> mlist = scene->getModels();
+
+      Color pixel_color;
+      bool was_hit = false;
+      for(vector<GModel*>::iterator it = mlist.begin(); it != mlist.end(); it++)
+      {
+        pixel_color = imgRay.TraceRay((*it), depth, &was_hit, 0.0);
+        if(was_hit) 
+        {
+          //cout << i << ", " << j << " pixel color: " << pixel_color[0] << ", " << pixel_color[1] << ", " << pixel_color[2] << endl;
+          break;
+        }
+      }
+
+      if(!was_hit) 
+        pixel_color = Color::Zero();
+
+      resultImage(i, j)->Red = (int)floor(pixel_color[0] * 255.0);
+      resultImage(i, j)->Green = (int)floor(pixel_color[1] * 255.0);
+      resultImage(i, j)->Blue = (int)floor(pixel_color[2] * 255.0);
+      resultImage(i, j)->Alpha = 0;
+    }
+
+    cout << "Processed " << j << "-th row, out of " << y_size << endl;
+    //resultImage.WriteToFile("output.bmp");
+  }
+
+  resultImage.WriteToFile("output.bmp");
+  return 0;
 }
