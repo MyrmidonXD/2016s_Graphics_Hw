@@ -103,9 +103,9 @@ GLfloat tr2_diffuse[] = { 0.965, 0.789, 0.785, 0.6 };
 GLfloat tr2_specular[] = { 0.0, 0.0, 0.0, 1.0 };
 GLfloat tr2_shininess = 108.0;
 
-GLfloat tr3_ambient[] = { 0.1, 0.0, 0.0, 1.0 };
-GLfloat tr3_diffuse[] = { 0.8, 0.0, 0.0, 0.2 };
-GLfloat tr3_specular[] = { 0.7, 0.1, 0.1, 1.0 };
+GLfloat tr3_ambient[] = { 0.0, 0.0, 0.1, 1.0 };
+GLfloat tr3_diffuse[] = { 0.0, 0.0, 0.8, 0.2 };
+GLfloat tr3_specular[] = { 0.1, 0.1, 0.7, 1.0 };
 GLfloat tr3_shininess = 108.0;
 
 GLfloat tr4_ambient[] = { 0.02, 0.02, 0.02, 1.0 };
@@ -814,6 +814,16 @@ int main(int argc, char *argv[])
   mlist[3]->setOpaqueness(true);
   mlist[3]->reflectance = 0.2;
   mlist[3]->refractance = 0.0;
+  
+  mlist.push_back(makeSphere(50.0, 0.0, 50.0, 140.0));
+
+  mlist[4]->setMaterial(GL_AMBIENT, mat4_ambient);
+  mlist[4]->setMaterial(GL_DIFFUSE, mat4_diffuse);
+  mlist[4]->setMaterial(GL_SPECULAR, mat4_specular);
+  mlist[4]->setShininess(mat4_shininess);
+  mlist[4]->setOpaqueness(true);
+  mlist[4]->reflectance = 0.3;
+  mlist[4]->refractance = 0.4;
 
   Vector3f main_light_pos(light0Pos[0], light0Pos[1], light0Pos[2]);
   GLight *main_light = new GLight(main_light_pos, 0.8);
@@ -855,8 +865,8 @@ int main(int argc, char *argv[])
   }
 
   // Shooting Rays
-  int x_size = 512;
-  int y_size = 512;
+  int x_size = 2048;
+  int y_size = 2048;
   float image_d = ((float)y_size / 2.0) * (1.0 / tan((fovy / 2.0) * (PI / 180.0)));
 
   int depth = 5;

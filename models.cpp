@@ -786,8 +786,6 @@ Color GRay::TraceRay(vector<GModel*> &mlist, int max_depth, bool *was_hit, float
 
   Color local_color = ambient_color + diffuse_color + specular_color;    
 
-  // TODO Reflection
- 
   ic_normal.normalized();
   Vector3f reflect_dir = (-2.0 * _direction).dot(ic_normal)*ic_normal - (-1.0)*_direction;
   GRay reflect_ray(nearest_ic_point, reflect_dir);
@@ -798,13 +796,46 @@ Color GRay::TraceRay(vector<GModel*> &mlist, int max_depth, bool *was_hit, float
     reflect_color = Color::Zero();
   
   // TODO Refraction
-  
+  Color refract_color = Color::Zero();
+
+  float eta = 1.04; // (n2 / n1)
+  float c1 = -(_direction.dot(ic_normal));
+  float c2 = 1.0 - eta*eta*(1.0 - c1*c1);
+
+  if(c2 >= 0.0)
+  {
+    Vector3f inner_dir = eta * _direction + (eta * c1 - sqrt(c2)) * ic_normal;
+    inner_dir.normalize();
+
+    Vector3f dp = nearest_ic_point - nearest_model->getCenter();
+
+    Vector3f out_point = (2.0 * inner_dir.dot(dp)) * inner_dir + nearest_ic_point;
+    Vector3f out_normal = (nearest_model->getCenter() - out_point);
+    out_normal.normalize();
+    
+    float r_eta = 1.0 / eta;
+    float r_c1 = -(inner_dir.dot(out_normal));
+    float r_c2 = 1.0 - r_eta*r_eta*(1.0 - r_c1*r_c1);
+
+    if(r_c2 >= 0.0)
+    {
+      Vector3f out_dir = r_eta * inner_dir + (r_eta * r_c1 - sqrt(r_c2)) * out_normal;
+      
+      GRay refract_ray(out_point, out_dir);
+
+      bool refract_hit = false;
+      refract_color = refract_ray.TraceRay(mlist, max_depth-1, &refract_hit, 0.0);
+      if(reflect_hit == false) 
+        reflect_color = Color::Zero();
+    }
+  }
+
   // Return result
   
   float a = nearest_model->reflectance;
   float b = nearest_model->refractance;
 
-  Color result_color = (1.0 - a - b) * local_color + a * reflect_color;
+  Color result_color = (1.0 - a - b) * local_color + a * reflect_color + b * refract_color;
   //Color result_color = local_color;
 
   return result_color;
