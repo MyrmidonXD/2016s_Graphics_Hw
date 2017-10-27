@@ -22,5 +22,9 @@ $ ./_hw5
 $ ./_hw5 --GL
 ```
 
+## Result Image
+![Result_2048x2048](https://raw.githubusercontent.com/MyrmidonXD/2016s_Graphics_Hw/master/res_img/output_2048.jpg)
+
+
 ## Caution
 - DO NOT USE this code to your homework/assignment.
